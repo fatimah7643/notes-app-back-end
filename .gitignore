@@ -1,2 +1,7 @@
 node_modules
 notes_api-webserver.pem
+.env
+.prod.env
+test-api.js
+.qwen
+
