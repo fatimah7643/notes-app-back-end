@@ -23,8 +23,12 @@ export const up = (pgm) => {
             type: 'TEXT',
             notNull: true,
         },
+        fullname: {
+            type: 'TEXT',
+            notNull: true,
+        },
         created_at: {
-            type: ' TEXT',
+            type: 'TEXT',
             notNull: true,
         },
         updated_at: {
