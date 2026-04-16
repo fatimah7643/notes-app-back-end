@@ -1,10 +1,11 @@
 import { Pool } from 'pg';
 import { nanoid } from 'nanoid';
-import { text } from 'express';
+import collaborationRepositories from '../../collaborations/repositories/collaboration-repositories';
 
 class NoteRepositories {
     constructor() {
         this.pool = new Pool();
+        this.collaborationRepositories = collaborationRepositories;
     }
 
 
@@ -25,16 +26,24 @@ class NoteRepositories {
 
     async getNotes() {
         const query = {
-            text: 'SELECT * FROM notes WHERE owner = $1',
+            text: `SELECT notes.* FROM notes
+            LEFT JOIN colaborations ON collaborations.noted_id = notes.id
+            WHERE notes.owner = $1 OR collaborations.user_id = $1
+            GROUP BY notes.id`,
             values: [owner],
         };
+
+
         const result = await this.pool.query(query);
         return result.rows;
     }
 
     async getNoteByid(id) {
         const query = {
-            text: 'SELECT * FROM notes WHERE id = $1',
+            text: `SELECT notes.*, user.username 
+            FROM notes
+            LEFT JOIN users ON users.id = notes.owner
+            WHERE notes.id = $1`,
             values: [id],
         };
 
@@ -65,21 +74,16 @@ class NoteRepositories {
         return result.rows[0].id;
     }
 
-    async verifyNoteOwner(id, ownwer) {
-        const query = {
-            text: 'SELECT * FROM notes WHERE id = $1',
-            values: [id],
-        };
-        const result = await this.pool.query(query);
-        if (!result.rows.length) {
-            return null;
+    async verifyNoteAccess(noteId, userId) {
+        const ownerResult = await this.verifyNoteOwner(noteId, userId);
+        
+        if (ownerResult) {
+            return ownerResult;
         }
-        const note = result.rows[0];
-        if (note.owner !== owner) {
-            return null;
+        const result =  await this.collaborationRepositories.verifyCollaborator(noteId, userId);
+        
+        return result;
         }
-        return result.rows[0];
-    }
 }
 
 export default new NoteRepositories();
